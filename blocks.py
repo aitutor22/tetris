@@ -198,16 +198,6 @@ class Block(object):
     #otherwise, will produce a block but not use the item
     @classmethod
     def new_block(cls, start_x=0, start_y=0, pop=True):
-
-        #obtains block type from a random queue
-        #this is to ensure a more even distribution of blocks
-        # try:
-        #     block_type = cls.shapes_queue.pop()
-        # except IndexError:
-        #     cls.shapes_queue = cls.shapes.keys()
-        #     random.shuffle(cls.shapes_queue)
-        #     block_type = cls.shapes_queue.pop()
-
         if pop:
             block_type = cls.shapes_queue.pop()
 

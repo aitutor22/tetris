@@ -5,12 +5,16 @@ import classifier
 
 #inspired by 2010 "Kevin Chabowski"<kevin@kch42.de>'s implementation of Tetris
 #rules taken from http://tetris.wikia.com/wiki/Tetris_Guideline
-cols = 5
-rows = 8
+cols = 8
+rows = 16
 cell_size = 36
 base_score = [0, 40, 100, 300, 1200]
 num_lines_to_advance = 6
 colors = [(0, 0, 0), (255, 85, 85), (35, 35, 35), (155, 200, 70)]
+pause_before_closing = 0
+interval_between_drop = 0.001
+
+turn_in_milliseconds = 10
 
 #event to tell pygame to move current block down by 1
 DROP_EVENT = pygame.USEREVENT + 1
@@ -103,9 +107,6 @@ def print_matrix(matrix):
 
     print("\n")
 
-# def top_left_coord(coords):
-#     coords.sort()
-
 def potential_moves(board, block):
     moves_dict = {}     
     filled_surfaced = get_filled_surface(board)
@@ -166,9 +167,9 @@ class TetrisApp(object):
     def run(self):   
         self.game_running = False
         self.start_game()
-        # pygame.time.set_timer(AI_MOVE_EVENT, 50)   
+        pygame.time.set_timer(AI_MOVE_EVENT, 50)   
 
-        while True:
+        while True and not self.paused:
             for event in pygame.event.get():
                 self.event_helper(event)
 
@@ -178,9 +179,10 @@ class TetrisApp(object):
         elif event.type == DROP_EVENT:
             self.drop()
 
-        # #for AI 
-        # elif event.type == AI_MOVE_EVENT:
-        #     self.get_best_move()
+        #for AI 
+        elif event.type == AI_MOVE_EVENT:
+            self.get_best_move()
+
         elif event.type == pygame.KEYDOWN:
             #escape key
             if event.key == 27:
@@ -205,31 +207,34 @@ class TetrisApp(object):
 
             #a key trigger ai movement
             elif event.key == 97:
-                pygame.time.set_timer(AI_MOVE_EVENT, 100)
+                pygame.time.set_timer(AI_MOVE_EVENT, turn_in_milliseconds)
 
             #b key 
             elif event.key == 98:
+                # self.generate_new_block()
+                # self.update_screen()
                 # print(self.board)
-                potential_moves(self.board, self.block)
+                pass
+                # potential_moves(self.board, self.block)
 
 
     def update_screen(self):
-        if self.game_running:
-            self.screen.fill((0, 0, 0))
-            self.draw_matrix(self.bground_grid, (0,0))
-            self.draw_matrix(self.board, (0, 0), True)
+        self.screen.fill((0, 0, 0))
+        self.draw_matrix(self.bground_grid, (0,0))
 
-            if self.block:
-                self.draw_matrix(self.block.value, (self.block.x, self.block.y))
+        if self.block:
+            self.draw_matrix(self.block.value, (self.block.x, self.block.y))
 
-            #render score and level
-            score = self.font.render("Score: " + str(self.score), True, (255, 255, 255))
-            self.screen.blit(score, (self.width - score.get_width() - 20, score.get_height()))
-            level = self.font.render("Level: " + str(self.level), True, (255, 255, 255))
-            #allign with score
-            self.screen.blit(level, (self.width - score.get_width() - 20, score.get_height() + 40))
+        self.draw_matrix(self.board, (0, 0), True)
 
-            pygame.display.update()
+        #render score and level
+        score = self.font.render("Score: " + str(self.score), True, (255, 255, 255))
+        self.screen.blit(score, (self.width - score.get_width() - 20, score.get_height()))
+        level = self.font.render("Level: " + str(self.level), True, (255, 255, 255))
+        #allign with score
+        self.screen.blit(level, (self.width - score.get_width() - 20, score.get_height() + 40))
+
+        pygame.display.update()
 
 
     def drop(self):
@@ -241,9 +246,7 @@ class TetrisApp(object):
             #if collide, then add block to board and check if game over
             else:
                 test_board = add_block_to_board(self.board, self.block)
-                if test_board == None:
-                    print("test board is none")
-                print_matrix(test_board)
+                # print_matrix(test_board)
 
                 #test_board will be None if there is an overlap (aka game over)
                 if test_board == None:
@@ -256,19 +259,19 @@ class TetrisApp(object):
                     self.clear_rows()
                     self.check_level()
 
-                    # target_coords = self.generate_best_move()
-                    # print(target_coords[0][0])
+                    self.generate_new_block()
 
-                    test_block = Block.new_block(0, 0, False)
-                    if detect_collisions(self.board, test_block):
-                        self.game_over()
-
-                    else:
-                        self.last_block = self.block
-                        self.block = Block.new_block()
-                # print(self.block.block_type)
-                # print("______")
                 return False
+
+    def generate_new_block(self, x=0, y=0):
+        #first test if a new block is valid
+        test_block = Block.new_block(x, y, False)
+        if detect_collisions(self.board, test_block):
+            self.game_over()
+
+        else:
+            self.last_block = self.block
+            self.block = Block.new_block(x, y)        
 
     def clear_rows(self):
         #get a list of rows that we want to remove
@@ -339,6 +342,7 @@ class TetrisApp(object):
     def start_game(self):
         if not self.game_running:
             self.game_running = True
+            self.paused = False
             self.init_game()
 
     def init_game(self):
@@ -346,7 +350,7 @@ class TetrisApp(object):
         self.level = 1
         self.lines_cleared = 0
         self.board = self.new_board()
-        self.block = Block.new_block()
+        self.block = None
         self.last_block = None
         self.update_screen()
 
@@ -367,10 +371,7 @@ class TetrisApp(object):
     def draw_matrix(self, matrix, offset, special_color=False):
         off_x, off_y  = offset
 
-        # print('curr block')
-        # print(self.block.block_type)
         if special_color and self.last_block:
-            # print("\n\n")
             coords = self.last_block.get_coords()
 
         for cy, row in enumerate(matrix):
@@ -380,7 +381,6 @@ class TetrisApp(object):
                     color_index = val
 
                     if special_color and self.last_block and (off_x + cx, off_y + cy) in coords:
-                        print(special_color, self.last_block, (off_x + cx, off_y + cy) in coords)
                         color_index = 3
 
                     # pygame.draw.rect(self.screen, colors[val],
@@ -400,32 +400,42 @@ class TetrisApp(object):
         self.update_screen()
         self.game_running = False
         print("Game Over")
+
+        #2 sec pause before closing
+        time.sleep(pause_before_closing)
+        # print("redrawing")
+        # self.update_screen()
+        self.paused = True
         return self.score
 
 
     def get_best_move(self):
         if self.game_running:
-            moves = potential_moves(self.board, self.block)
 
-            # #if there are no moves available, then game should end
-            # if len(moves) == 0:
-            #     self.game_over()
+            #we test if this block is valid before using it
+            test_block = Block.new_block(0, 0, False)
+            moves = potential_moves(self.board, test_block)
 
             potential_boards = [potential_board for potential_board, _ in moves]
             potential_blocks = [potential_block for _, potential_block in moves]
-
 
             # print(potential_boards)
             index = classifier.return_best_board(potential_boards, self.weights)
             best_block = potential_blocks[index]
 
-            #hack -> make block auto go to best position, then auto drop
-            self.block.x = best_block.x
-            self.block.rotate_to(best_block.index)
+            best_block.y = 0
+            self.block = best_block
+            self.update_screen()
 
             while True:
-                if not self.drop():
+                if self.drop():
+                    time.sleep(interval_between_drop)
+                    self.update_screen()
+
+                else:
                     break
+                    # time.sleep(0.5)
+                    # self.update_screen()
 
 if __name__ == "__main__":
     app = TetrisApp([0, 0, 0, 0])

@@ -2,16 +2,16 @@ import tetris
 import numpy as np
 import itertools
 
-population_size = 10
+population_size = 20
 no_of_features = 4
 selection_portion = 0.5 #percentage of population to keep every round
     
 def ga_main():
 
-    no_of_iterations = 10
+    no_of_iterations = 15
 
     #generate initial solution
-    solns_weight_arr = np.random.randn(population_size, no_of_features)
+    solns_weight_arr = np.random.randn(population_size, no_of_features) * 3
     
     for i in range(no_of_iterations):
         print "iteration %s ans:" %(i)        
@@ -63,6 +63,8 @@ def simulate_for_results(wt_arr):
     app = tetris.TetrisApp(wt_arr)
     app.run()
     print(app.score)
+    print(wt_arr)
+    print("**********")
     return app.score
     #return result_arr
 
