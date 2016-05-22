@@ -1,11 +1,12 @@
 from __future__ import division
-import pygame, sys, copy, time
+import pygame, sys, copy, time, random
 from blocks import Block
+import classifier
 
 #inspired by 2010 "Kevin Chabowski"<kevin@kch42.de>'s implementation of Tetris
 #rules taken from http://tetris.wikia.com/wiki/Tetris_Guideline
-cols = 10
-rows = 22
+cols = 8
+rows = 16
 cell_size = 36
 base_score = [0, 40, 100, 300, 1200]
 num_lines_to_advance = 6
@@ -38,16 +39,99 @@ def detect_collisions(board, block):
 
     return False
 
-#modifies board inplace
+
+def valid_placement(board, block, surface_coords):
+    width, height = len(block.value[0]), len(block.value)
+    results = []
+
+    #need to consider multiple positions to left
+    for offset_x in range(width)[::-1]:
+        test_block = Block.copy_block(block)
+        test_block.x = surface_coords[0] - offset_x
+        test_block.y = surface_coords[1] - height
+
+        coords = valid_placement_helper(board, test_block)
+
+        if coords:
+            results.append(test_block)
+
+    return results
+
+#modifies block in place
+#returns coords of final position
+def valid_placement_helper(board, block):
+    #if there is an initial collision before we start dropping, means invalid 
+    if detect_collisions(board, block):
+        return None
+
+    #meant to consider blocks that have empty parts
+    while drop_helper(board, block):
+        block.y += 1
+
+    return block.get_coords()    
+
+#returns True if a block can be dropped
+#does not affect the block
+def drop_helper(board, block):
+    #we first test to see if there will be a collision if block moves down
+    test_block = Block.copy_block(block)
+    test_block.y += 1
+
+    return not detect_collisions(board, test_block)
+
+#returns a new board with block added
 def add_block_to_board(board, block):
+    board = copy.deepcopy(board)
+
     coords = block.get_coords()    
     for x, y in coords:
-        board[y][x] += 1    
+        board[y][x] += 1
+
+    return board
 
 #helper function for debugging
 def print_matrix(matrix):
     for row in matrix:
-        print(row)    
+        print(row)  
+
+def potential_moves(board, block):
+    moves_dict = {}     
+    filled_surfaced = get_filled_surface(board)
+    potential_boards = []
+    for fs in filled_surfaced:
+        for b in valid_placement(board, block, fs):
+
+            entry = b.get_coords()
+            key = entry[0][0]
+
+            #for entries with the same xcoord, we choose the one that is higher
+            #i.e. smaller y value
+            if key not in moves_dict or entry[0][1] < moves_dict[key][0][0][1]:
+                moves_dict[key] = (entry, b)
+
+
+    for val in moves_dict.values():
+        temp_block = val[1]
+        temp_board = add_block_to_board(board, temp_block)
+        potential_boards.append((temp_board, temp_block))
+
+    # print([b[0] for b in potential_boards])
+    
+    return potential_boards
+
+
+#returns list of coords with outermost filled blocks
+def get_filled_surface(board):
+    filled_surfaced = []
+    board_dict = convert_board_to_dict(board)
+
+    for cx in range(cols):
+        for cy in range(len(board) - 1):
+            if not board_dict[(cx, cy)] and board_dict[(cx, cy + 1)]:
+                filled_surfaced.append((cx, cy + 1))
+                break
+
+    return filled_surfaced   
 
 class TetrisApp(object):
     def __init__(self):
@@ -100,7 +184,7 @@ class TetrisApp(object):
 
         #for AI 
         elif event.type == AI_MOVE_EVENT:
-            self.ai_move([(8, 20), (9, 20), (8, 21), (9, 21)])   
+            self.get_best_move()
 
         elif event.type == pygame.KEYDOWN:
 
@@ -131,10 +215,12 @@ class TetrisApp(object):
 
             #a key trigger ai movement
             elif event.key == 97:
-                pygame.time.set_timer(AI_MOVE_EVENT, 50)
+                pygame.time.set_timer(AI_MOVE_EVENT, 500)
 
+            #b key 
             elif event.key == 98:
-                self.potential_moves()
+                # print(self.board)
+                potential_moves(self.board, self.block)
 
             #z key trigger instant drop
             elif event.key == 122:
@@ -143,42 +229,31 @@ class TetrisApp(object):
                         break
 
     def drop(self):
-        #we create a test block to check if there is a collision before manipulating the 
-        #actual block (that is shown on screen)
         if self.game_running:
+            if drop_helper(self.board, self.block):
+                self.block.y += 1
+                return True
 
-            #we first test to see if there will be a collision if block moves down
-            test_block = Block.copy_block(self.block)
-            test_block.y += 1
+            #if collide, then add block to board and check if game over
+            else:
 
-            #if there is a collision for the test_block, we do not modify
-            #the position of the actual block and just add it to board
-            if detect_collisions(self.board, test_block):
-
-                add_block_to_board(self.board, self.block)
-
-                #game over
-                test_block.y -= 1
-                if test_block.y == 0:
+                if detect_collisions(self.board, self.block):
                     self.game_running = False
+                    self.board = add_block_to_board(self.board, self.block)
                     print("Game Over")
+                    pygame.display.update()
+                    return False
 
+
+                self.board = add_block_to_board(self.board, self.block)
                 #if not game over, then create new block
                 self.clear_rows()
                 self.check_level()
 
-                target_coords = self.generate_best_move()
-                print(target_coords[0][0])
-                self.block = Block.new_block(target_coords[0][0], 0)
-
+                # target_coords = self.generate_best_move()
+                # print(target_coords[0][0])
+                self.block = Block.new_block()
                 return False
-            
-            #if there is no collision (i.e. valid move), then update actual block
-            else:
-                self.block.y += 1
-
-            return True
-                
 
     def clear_rows(self):
         #get a list of rows that we want to remove
@@ -215,7 +290,6 @@ class TetrisApp(object):
 
     def move(self, amt):
         if self.game_running:
-
             #we first test to see if there will be a collision if block moves down
             #by using a test_block
             test_block = Block.copy_block(self.block)
@@ -282,8 +356,6 @@ class TetrisApp(object):
                             (off_y + cy) * cell_size, 
                             cell_size - 1, cell_size - 1), 0)
 
-
-
     def ai_move(self, target_coords):
         coords = self.block.get_coords()
         if coords[0][0] < target_coords[0][0]: 
@@ -293,55 +365,40 @@ class TetrisApp(object):
             self.move(-1)
 
         elif coords[0][1] < target_coords[0][1]:
-            self.drop()
+            self.drop()     
 
-
-
-
-
-    def potential_moves(self):
-        # moves = []
-        
-        filled_surfaced = self.get_filled_surface()
-        print(filled_surfaced)
-
-
-
-
-    #returns list of coords with outermost filled blocks
-    def get_filled_surface(self):
-        filled_surfaced = []
-        board_dict = convert_board_to_dict(self.board)
-        for cx in range(cols):
-            for cy in range(len(self.board) - 1):
-                if not board_dict[(cx, cy)] and board_dict[(cx, cy + 1)]:
-                    filled_surfaced.append((cx, cy + 1))
-                    break
-
-        return filled_surfaced        
-
-
-
-
-
-
-        # print_matrix(self.board)
-        # print(self.block.value)
-        # for cy, row in enumerate(self.board):
-        #     for cx, val in enumerate(row):
-        #         if val == 1 and self.board[row - 1][cx]
-        #         moves.append((cx, cy))
-
-
-    def generate_best_move(self):
-        return [(8, 20), (9, 20), (8, 21), (9, 21)]
-
-
+    # def generate_best_move(self):
+    #     return [(8, 20), (9, 20), (8, 21), (9, 21)]
 
     def quit(self):
         print("quitting")
         sys.exit()        
 
+    def get_best_move(self):
+
+        if self.game_running:
+            moves = potential_moves(self.board, self.block)
+
+            #if there are no moves available, then game should end
+            if len(moves) == 0:
+                self.game_running = False
+                return False
+
+            potential_boards = [potential_board for potential_board, _ in moves]
+            potential_blocks = [potential_block for _, potential_block in moves]
+
+            # print(potential_boards)
+            index = classifier.return_best_board(potential_blocks)
+            best_block = potential_blocks[index]
+
+            #hack -> make block auto go to best position, then auto drop
+            self.block.x = best_block.x
+            while True:
+                if not self.drop():
+                    break
+
 if __name__ == "__main__":
     app = TetrisApp()
     app.run()
+
+
