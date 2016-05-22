@@ -183,7 +183,10 @@ class TetrisApp(object):
 
         #for AI 
         elif event.type == AI_MOVE_EVENT:
-            self.get_best_move()
+            try:
+                self.get_best_move()
+            except:
+                pass
 
         elif event.type == pygame.KEYDOWN:
             #escape key
