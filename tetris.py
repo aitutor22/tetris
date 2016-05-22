@@ -12,9 +12,10 @@ base_score = [0, 40, 100, 300, 1200]
 num_lines_to_advance = 6
 colors = [(0, 0, 0), (255, 85, 85), (35, 35, 35), (155, 200, 70)]
 pause_before_closing = 0
-interval_between_drop = 0.001
+interval_between_drop = 0.01
+fast_mode = True
 
-turn_in_milliseconds = 10
+turn_in_milliseconds = 1
 
 #event to tell pygame to move current block down by 1
 DROP_EVENT = pygame.USEREVENT + 1
@@ -432,15 +433,19 @@ class TetrisApp(object):
             self.block = best_block
             self.update_screen()
 
-            while True:
-                if self.drop():
-                    time.sleep(interval_between_drop)
-                    self.update_screen()
+            if not fast_mode:
+                while True:
+                    if self.drop():
+                        time.sleep(interval_between_drop)
+                        self.update_screen()
 
-                else:
-                    break
-                    # time.sleep(0.5)
-                    # self.update_screen()
+                    else:
+                        break
+            else:
+                while True:
+                    if not self.drop():
+                        self.update_screen()
+                        break
 
 if __name__ == "__main__":
     app = TetrisApp([0, 0, 0, 0])
