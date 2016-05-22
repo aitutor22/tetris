@@ -7,14 +7,14 @@ Created on Sun May 22 15:19:31 2016
 
 import numpy as np
 
-def return_best_board(input_list):
+def return_best_board(input_list, weight_arr):
     results_arr = []
     for i in input_list:
-        results_arr.append(calc_results(i))
+        results_arr.append(calc_results(i, weight_arr))
     print results_arr
     return np.argmax(results_arr)
     
-def calc_results(input_list=[[]]):
+def calc_results(input_list, weight_arr):
     #input_list = [[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1]]
 
     input_arr = np.array(input_list)
@@ -22,7 +22,7 @@ def calc_results(input_list=[[]]):
     rows = 17
     cols = 8
     
-    weight_arr = np.array([0.5,-0.5,-0.5,-0.5])
+    #weight_arr = np.array([0.5,-0.5,-0.5,-0.5])
     #clear, height, hole, blockage
     
     #clear score calc
