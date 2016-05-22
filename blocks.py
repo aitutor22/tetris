@@ -224,6 +224,15 @@ class Block(object):
         self.length = Block.shapes_length[self.block_type][self.index % 2]        
         self.value = self.get_value()
 
+    def rotate_to(self, index):
+        self.index = index
+
+        #buffer is used to check     
+        self.buffer = Block.shapes_buffer[self.block_type][self.index]
+        #index 0 and 2 have the same length, while 1 and 3 have the same length
+        self.length = Block.shapes_length[self.block_type][self.index % 2]        
+        self.value = self.get_value()        
+
     def rotate_left(self):
         self.rotate(-1)
 

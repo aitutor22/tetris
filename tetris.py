@@ -45,15 +45,17 @@ def valid_placement(board, block, surface_coords):
     results = []
 
     #need to consider multiple positions to left
-    for offset_x in range(width)[::-1]:
-        test_block = Block.copy_block(block)
-        test_block.x = surface_coords[0] - offset_x
-        test_block.y = surface_coords[1] - height
+    for rotation_index in range(4):
+        for offset_x in range(width)[::-1]:
+            test_block = Block.copy_block(block)
+            test_block.x = surface_coords[0] - offset_x
+            test_block.y = surface_coords[1] - height
+            test_block.rotate_to(rotation_index)
 
-        coords = valid_placement_helper(board, test_block)
+            coords = valid_placement_helper(board, test_block)
 
-        if coords:
-            results.append(test_block)
+            if coords:
+                results.append(test_block)
 
     return results
 
@@ -98,6 +100,7 @@ def potential_moves(board, block):
     moves_dict = {}     
     filled_surfaced = get_filled_surface(board)
     potential_boards = []
+
     for fs in filled_surfaced:
         for b in valid_placement(board, block, fs):
 
@@ -161,7 +164,7 @@ class TetrisApp(object):
     def update_screen(self):
         self.draw_matrix(self.bground_grid, (0,0))
         self.draw_matrix(self.board, (0, 0))
-        self.draw_matrix(self.block.value, (self.block.x, self.block.y))
+        # self.draw_matrix(self.block.value, (self.block.x, self.block.y))
 
         #render score and level
         score = self.font.render("Score: " + str(self.score), True, (255, 255, 255))
@@ -247,6 +250,8 @@ class TetrisApp(object):
 
                 self.board = add_block_to_board(self.board, self.block)
                 #if not game over, then create new block
+
+                time.sleep(0.5)
                 self.clear_rows()
                 self.check_level()
 
@@ -375,24 +380,29 @@ class TetrisApp(object):
         sys.exit()        
 
     def get_best_move(self):
-
         if self.game_running:
             moves = potential_moves(self.board, self.block)
 
             #if there are no moves available, then game should end
             if len(moves) == 0:
+                self.board = add_block_to_board(self.board, self.block)
+                pygame.display.update()
                 self.game_running = False
+                print("Game Over")
                 return False
 
             potential_boards = [potential_board for potential_board, _ in moves]
             potential_blocks = [potential_block for _, potential_block in moves]
 
+
             # print(potential_boards)
-            index = classifier.return_best_board(potential_blocks)
+            index = classifier.return_best_board(potential_boards)
             best_block = potential_blocks[index]
 
             #hack -> make block auto go to best position, then auto drop
             self.block.x = best_block.x
+            self.block.rotate_to(best_block.index)
+
             while True:
                 if not self.drop():
                     break
