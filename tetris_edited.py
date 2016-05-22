@@ -10,7 +10,7 @@ rows = 16
 cell_size = 36
 base_score = [0, 40, 100, 300, 1200]
 num_lines_to_advance = 6
-colors = [(0, 0, 0), (255, 85, 85), (35, 35, 35), (155, 200, 70)]
+colors = [(0, 0, 0), (255, 85, 85), (35, 35, 35)]
 
 #event to tell pygame to move current block down by 1
 DROP_EVENT = pygame.USEREVENT + 1
@@ -27,10 +27,8 @@ def convert_board_to_dict(board):
     return d
 
 #returns True is there is a collision
-def detect_collisions(board, block, coords=None):
-    if coords == None:
-        coords = block.get_coords()
-
+def detect_collisions(board, block):
+    coords = block.get_coords()
     try:
         for x, y in coords:
             #check if there is a collision or if block goes off screen
@@ -42,6 +40,11 @@ def detect_collisions(board, block, coords=None):
     return False
 
 
+# b = [[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 0, 0], [0, 1, 1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1]]
+
+# bl = Block.block()
+# [(2, 14), (1, 15), (2, 15), (1, 16)]
+
 def valid_placement(board, block, surface_coords):
     width, height = len(block.value[0]), len(block.value)
     results = []
@@ -50,9 +53,9 @@ def valid_placement(board, block, surface_coords):
     for rotation_index in range(4):
         for offset_x in range(width)[::-1]:
             test_block = Block.copy_block(block)
-            test_block.rotate_to(rotation_index)            
             test_block.x = surface_coords[0] - offset_x
             test_block.y = surface_coords[1] - height
+            test_block.rotate_to(rotation_index)
 
             coords = valid_placement_helper(board, test_block)
 
@@ -85,21 +88,29 @@ def drop_helper(board, block):
 
 #returns a new board with block added
 def add_block_to_board(board, block):
+    print("\n\n\n")
     board = copy.deepcopy(board)
+    error = None
 
     coords = block.get_coords()    
+    print(board)
+    print(coords)
     for x, y in coords:
-        board[y][x] = min(board[y][x] + 1, 1)
+        board[y][x] += 1
 
-    return board
+        if board[y][x] > 1:
+            print('error')
+            print(y, x)
+            print(board[y][x])
+            error = True
+            board[y][x] = 1
+
+    return (board, error)
 
 #helper function for debugging
 def print_matrix(matrix):
     for row in matrix:
         print(row)  
-
-# def top_left_coord(coords):
-#     coords.sort()
 
 def potential_moves(board, block):
     moves_dict = {}     
@@ -120,7 +131,7 @@ def potential_moves(board, block):
 
     for val in moves_dict.values():
         temp_block = val[1]
-        temp_board = add_block_to_board(board, temp_block)
+        temp_board = add_block_to_board(board, temp_block)[0]
         potential_boards.append((temp_board, temp_block))
 
     # print([b[0] for b in potential_boards])
@@ -163,7 +174,7 @@ class TetrisApp(object):
         self.paused = False
 
         self.start_game()
-        pygame.time.set_timer(AI_MOVE_EVENT, 50)   
+        pygame.time.set_timer(AI_MOVE_EVENT, 3000)   
 
         while True and not self.paused:
         # while True:
@@ -177,10 +188,7 @@ class TetrisApp(object):
 
                 #for AI 
                 if event.type == AI_MOVE_EVENT:
-                    try:
-                        self.get_best_move()
-                    except:
-                        pass
+                    self.get_best_move()
 
 
     def update_screen(self):
@@ -201,60 +209,60 @@ class TetrisApp(object):
         pygame.display.update()
 
 
-    def event_helper(self, event):
-        if self.board:
-            self.update_screen()
+    # def event_helper(self, event):
+    #     if self.board:
+    #         self.update_screen()
 
-        if event.type == pygame.QUIT:
-            self.quit()
-        elif event.type == DROP_EVENT:
-            self.drop()
+    #     if event.type == pygame.QUIT:
+    #         self.quit()
+    #     elif event.type == DROP_EVENT:
+    #         self.drop()
 
-        #for AI 
-        elif event.type == AI_MOVE_EVENT:
-            self.get_best_move()
+    #     #for AI 
+    #     elif event.type == AI_MOVE_EVENT:
+    #         self.get_best_move()
 
-        elif event.type == pygame.KEYDOWN:
+    #     elif event.type == pygame.KEYDOWN:
 
-            # print(event)
-            #escape key
-            if event.key == 27:
-                self.quit()
+    #         # print(event)
+    #         #escape key
+    #         if event.key == 27:
+    #             self.quit()
             
-            #space key
-            elif event.key == 32:
-                self.start_game()      
+    #         #space key
+    #         elif event.key == 32:
+    #             self.start_game()      
             
-            #up key
-            elif event.key == 273:
-                self.rotate() 
+    #         #up key
+    #         elif event.key == 273:
+    #             self.rotate() 
             
-            #down key
-            elif event.key == 274:
-                self.drop() 
+    #         #down key
+    #         elif event.key == 274:
+    #             self.drop() 
 
-            #left key
-            elif event.key == 276:
-                self.move(-1)  
+    #         #left key
+    #         elif event.key == 276:
+    #             self.move(-1)  
             
-            #right key
-            elif event.key == 275:
-                self.move(1)    
+    #         #right key
+    #         elif event.key == 275:
+    #             self.move(1)    
 
-            #a key trigger ai movement
-            elif event.key == 97:
-                pygame.time.set_timer(AI_MOVE_EVENT, 100)
+    #         #a key trigger ai movement
+    #         elif event.key == 97:
+    #             pygame.time.set_timer(AI_MOVE_EVENT, 1000)
 
-            #b key 
-            elif event.key == 98:
-                # print(self.board)
-                potential_moves(self.board, self.block)
+    #         #b key 
+    #         elif event.key == 98:
+    #             # print(self.board)
+    #             potential_moves(self.board, self.block)
 
-            #z key trigger instant drop
-            elif event.key == 122:
-                while True:
-                    if not self.drop():
-                        break
+    #         #z key trigger instant drop
+    #         elif event.key == 122:
+    #             while True:
+    #                 if not self.drop():
+    #                     break
 
     def drop(self):
         if self.game_running:
@@ -264,21 +272,16 @@ class TetrisApp(object):
 
             #if collide, then add block to board and check if game over
             else:
-                if detect_collisions(self.board, self.block):
+                self.board, err = add_block_to_board(self.board, self.block)
+
+                if err:
+                    print("Game Over")
                     self.game_over()
+                else:
+                    self.clear_rows()
+                    self.check_level()
 
-                self.board = add_block_to_board(self.board, self.block)
-                #if not game over, then create new block
-
-                time.sleep(0.5)
-                self.clear_rows()
-                self.check_level()
-
-                # target_coords = self.generate_best_move()
-                # print(target_coords[0][0])
-                self.block = Block.new_block()
-                # print(self.block.block_type)
-                # print("______")
+                print("returning false")
                 return False
 
     def clear_rows(self):
@@ -370,23 +373,13 @@ class TetrisApp(object):
         board += [[1 for x in xrange(cols)]]
         return board
 
-    def draw_matrix(self, matrix, offset, change_color=False):
+    def draw_matrix(self, matrix, offset):
         off_x, off_y  = offset
-
-
-        coords = self.block.get_coords()
-
         for cy, row in enumerate(matrix):
             for cx, val in enumerate(row):
                 #ensures that only valid blocks are drawn
                 if val:
-                    color_index = val
-                    if change_color and (off_x + cx, off_y + cy) in coords:
-                        color_index = 3
-                        # print("changing")
-
-                    # pygame.draw.rect(self.screen, colors[val],
-                    pygame.draw.rect(self.screen, colors[color_index],
+                    pygame.draw.rect(self.screen, colors[val],
                         pygame.Rect(
                             (off_x + cx) * cell_size,
                             (off_y + cy) * cell_size, 
@@ -418,11 +411,11 @@ class TetrisApp(object):
         sys.exit()        
 
     def game_over(self):
-        self.board = add_block_to_board(self.board, self.block)
+        self.board = add_block_to_board(self.board, self.block)[0]
         self.update_screen()
         self.game_running = False
         print("Game Over")
-        self.paused = True
+        # self.paused = True
         return self.score
 
 
@@ -431,13 +424,8 @@ class TetrisApp(object):
         if self.game_running:
             moves = potential_moves(self.board, self.block)
 
-            #if there are no moves available, then game should end
-            if len(moves) == 0:
-                self.game_over()
-
             potential_boards = [potential_board for potential_board, _ in moves]
             potential_blocks = [potential_block for _, potential_block in moves]
-
 
             # print(potential_boards)
             index = classifier.return_best_board(potential_boards, self.weights)

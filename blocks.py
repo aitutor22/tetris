@@ -179,6 +179,8 @@ class Block(object):
         self.block_type = block_type
         self.index = index
 
+        # print(self.block_type)
+
         self.x = start_x
         self.y = start_y
 
