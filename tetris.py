@@ -81,6 +81,8 @@ def valid_placement_helper(board, block):
 #returns True if a block can be dropped
 #does not affect the block
 def drop_helper(board, block):
+    if block == None:
+        return False
     #we first test to see if there will be a collision if block moves down
     test_block = Block.copy_block(block)
     test_block.y += 1
