@@ -174,7 +174,6 @@ class Block(object):
     shapes_queue = shapes.keys()
     random.shuffle(shapes_queue)
 
-
     def __init__(self, block_type, index=0, start_x=0, start_y=0):
         self.block_type = block_type
         self.index = index
@@ -195,17 +194,30 @@ class Block(object):
     def copy_block(cls, block):
         return cls(block.block_type, block.index, block.x, block.y)
 
+    #if pop is True, will actually use one an item in the queue
+    #otherwise, will produce a block but not use the item
     @classmethod
-    def new_block(cls, start_x=0, start_y=0):
+    def new_block(cls, start_x=0, start_y=0, pop=True):
 
         #obtains block type from a random queue
         #this is to ensure a more even distribution of blocks
-        try:
+        # try:
+        #     block_type = cls.shapes_queue.pop()
+        # except IndexError:
+        #     cls.shapes_queue = cls.shapes.keys()
+        #     random.shuffle(cls.shapes_queue)
+        #     block_type = cls.shapes_queue.pop()
+
+        if pop:
             block_type = cls.shapes_queue.pop()
-        except IndexError:
-            cls.shapes_queue = cls.shapes.keys()
-            random.shuffle(cls.shapes_queue)
-            block_type = cls.shapes_queue.pop()
+
+            #if shapes_queue is empty, refill it
+            if len(cls.shapes_queue) == 0:
+                cls.shapes_queue = cls.shapes.keys()
+                random.shuffle(cls.shapes_queue)            
+
+        else:
+            block_type = cls.shapes_queue[-1]
 
         return cls(block_type, 0, start_x, start_y)
 
