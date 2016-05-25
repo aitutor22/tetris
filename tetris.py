@@ -168,30 +168,38 @@ def get_filled_surface(board):
     return filled_surfaced   
 
 class TetrisApp(object):
-    def __init__(self, weights):
-        pygame.init()
-        pygame.key.set_repeat(250, 10)
+    def __init__(self, weights, headless=False):
 
         self.weights = weights
         self.width = cell_size * cols
         self.height = cell_size * rows
+        self.headless = headless
 
-        self.bground_grid = [[2 if x % 2 == y % 2 else 0 for x in xrange(cols)] for y in xrange(rows)]
+        if not headless:
+            pygame.init()
+            pygame.key.set_repeat(250, 10)
+            self.bground_grid = [[2 if x % 2 == y % 2 else 0 for x in xrange(cols)] for y in xrange(rows)]
+            self.screen = pygame.display.set_mode((self.width, self.height))
+            pygame.event.set_blocked(pygame.MOUSEMOTION)
+            # initialize font
+            self.font = pygame.font.SysFont("comicsansms", 24)
+
         self.board = None
-        
-        self.screen = pygame.display.set_mode((self.width, self.height))
-        pygame.event.set_blocked(pygame.MOUSEMOTION)
-        # initialize font
-        self.font = pygame.font.SysFont("comicsansms", 24)
 
     def run(self):   
         self.game_running = False
         self.start_game()
-        pygame.time.set_timer(AI_MOVE_EVENT, 50)   
 
-        while True and not self.paused:
-            for event in pygame.event.get():
-                self.event_helper(event)
+        if not self.headless:        
+            pygame.time.set_timer(AI_MOVE_EVENT, 10)   
+
+            while True and not self.paused:
+                for event in pygame.event.get():
+                    self.event_helper(event)
+
+        else:
+            while True and not self.paused:
+                self.get_best_move()
 
     def event_helper(self, event):
         if event.type == pygame.QUIT:
@@ -328,8 +336,8 @@ class TetrisApp(object):
         if self.lines_cleared >= self.level * num_lines_to_advance:
             self.level += 1
             #increase speed as we increase level
-            delay = max(1000 - 50 * (self.level - 1), 100)
-            pygame.time.set_timer(DROP_EVENT, delay)        
+            # delay = max(1000 - 50 * (self.level - 1), 100)
+            # pygame.time.set_timer(DROP_EVENT, delay)        
 
     def move(self, amt):
         if self.game_running:
@@ -349,7 +357,8 @@ class TetrisApp(object):
             if not detect_collisions(self.board, test_block):
                 self.block.x += amt
 
-            self.update_screen()
+            if not self.headless:        
+                self.update_screen()
 
     def rotate(self):
         if self.game_running:
@@ -362,7 +371,9 @@ class TetrisApp(object):
             #if there is no collision detected, rotate actual block
             if not detect_collisions(self.board, test_block):
                 self.block.rotate_right()
-                self.update_screen()
+                
+                if not self.headless:                        
+                    self.update_screen()
 
     def start_game(self):
         if not self.game_running:
@@ -377,11 +388,13 @@ class TetrisApp(object):
         self.board = self.new_board()
         self.block = None
         self.last_block = None
-        self.update_screen()
+
+        if not self.headless:        
+            self.update_screen()
 
 
         #remove for AI
-        self.block = Block.new_block(0, 0)
+        # self.block = Block.new_block(0, 0)
 
         #tells system to fire off a drop event once every 1000ms
         # pygame.time.set_timer(DROP_EVENT, 1000)
@@ -426,21 +439,22 @@ class TetrisApp(object):
     def game_over(self):
         self.last_block = self.block
         self.block = None
-        self.update_screen()
+
+        if not self.headless:        
+            self.update_screen()
+        
         self.game_running = False
         print("Game Over")
 
-        #2 sec pause before closing
+
         time.sleep(pause_before_closing)
-        # print("redrawing")
-        # self.update_screen()
         self.paused = True
         return self.score
 
 
     def get_best_move(self):
         if self.game_running:
-
+            # print_matrix(self.board)
             #we test if this block is valid before using it
             test_block = Block.new_block(0, 0, False)
             moves = potential_moves(self.board, test_block)
@@ -454,25 +468,29 @@ class TetrisApp(object):
 
             best_block.y = 0
             self.block = best_block
-            self.update_screen()
+
+            if not self.headless:   
+                self.update_screen()
 
             if not fast_mode:
                 while True:
                     if self.drop():
-                        time.sleep(interval_between_drop)
-                        self.update_screen()
+                        if not self.headless:        
+                            time.sleep(interval_between_drop)
+                            self.update_screen()
 
                     else:
                         break
             else:
                 while True:
                     if not self.drop():
-                        self.update_screen()
+                        if not self.headless:        
+                            self.update_screen()
                         break
 
 if __name__ == "__main__":
     #clear, height, hole, blockage
-    app = TetrisApp([-3.11447111, -4.39566282, -4.47513427, 1.30973485])
+    app = TetrisApp([-1.73952898, -1.35679522, -3.89298252, -1.2184164], True)
     app.run()
-
+    print(app.score)
 

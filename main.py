@@ -60,7 +60,7 @@ def simulate_for_results(wt_arr):
     #score = tetris.run(wt_arr)
     #wt_res = [0.7, 0.5, -0.4, 0.5]
     #result_arr = np.sum(wt_arr * wt_res)
-    app = tetris.TetrisApp(wt_arr)
+    app = tetris.TetrisApp(wt_arr, True)
     app.run()
     print(app.score)
     # print(wt_arr)
