@@ -472,7 +472,7 @@ class TetrisApp(object):
 
 if __name__ == "__main__":
     #clear, height, hole, blockage
-    app = TetrisApp([0.76, -5, -0.35, -0.18])
+    app = TetrisApp([-3.11447111, -4.39566282, -4.47513427, 1.30973485])
     app.run()
 
 

@@ -63,8 +63,13 @@ def simulate_for_results(wt_arr):
     app = tetris.TetrisApp(wt_arr)
     app.run()
     print(app.score)
-    print(wt_arr)
-    print("**********")
+    # print(wt_arr)
+    # print("**********")
+
+    #appends to file
+    with open("output.txt", "a") as f:
+        f.write("{};{}\n".format(app.score, wt_arr))
+
     return app.score
     #return result_arr
 
