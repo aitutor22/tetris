@@ -444,7 +444,7 @@ class TetrisApp(object):
             self.update_screen()
         
         self.game_running = False
-        print("Game Over")
+        # print("Game Over")
 
 
         time.sleep(pause_before_closing)

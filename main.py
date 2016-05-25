@@ -57,18 +57,15 @@ def ga_train_once(solns_weight_arr):
     
 def simulate_for_results(wt_arr):
     #run the game and get back the result
-    #score = tetris.run(wt_arr)
-    #wt_res = [0.7, 0.5, -0.4, 0.5]
-    #result_arr = np.sum(wt_arr * wt_res)
     app = tetris.TetrisApp(wt_arr, True)
     app.run()
     print(app.score)
-    # print(wt_arr)
-    # print("**********")
+
+
 
     #appends to file
     with open("output.txt", "a") as f:
-        f.write("{};{}\n".format(app.score, wt_arr))
+        f.write("{},{}\n".format(app.score, ",".join(wt_arr.astype(str))))
 
     return app.score
     #return result_arr

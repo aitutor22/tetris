@@ -1,67 +1,87 @@
+import numpy as np
+import pandas as pd
+from pandas import DataFrame
 import tetris
 
-# data = """[-1.73952898 -1.35679522 -3.89298252 -1.2184164 ]
-# [ 2.27666342 -3.29886725 -3.89298252 -1.2184164 ]
-# [ 2.27666342 -1.35679522 -3.89298252  0.16037259]
-# [-0.09252012 -1.35679522 -1.31174177 -1.2184164 ]
-# [-4.36137774 -6.91457061 -3.89298252 -2.81218912]
-# [-2.27576536 -6.91457061 -5.63065351 -5.14872164]
-# [-2.27576536 -6.91457061 -3.89298252 -1.2184164 ]
-# [-2.27576536 -1.35679522 -3.89298252 -1.2184164 ]
-# [-2.27576536 -1.35679522 -2.85860019 -1.2184164 ]
-# [ 2.27666342 -1.35679522 -1.31174177 -1.2184164 ]
-# [-2.27576536 -6.91457061 -3.89298252 -2.81218912]
-# [-4.36137774 -1.35679522 -5.63065351  0.16037259]
-# [-4.36137774 -6.39830061 -5.63065351 -5.14872164]
-# [-0.09252012 -6.91457061 -3.5855664  -1.2184164 ]
-# [ 2.27666342 -6.91457061 -3.89298252 -1.2184164 ]
-# [-2.27576536 -6.91457061 -3.89298252 -1.2184164 ]"""
-
-# results = []
-
-# for line in data.split("\n"):
-#     line = line.replace("[", "")
-#     line = line.replace("]", "")
-#     results.append([float(n) for n in line.split(" ") if n != ""])
-
-# print(results)
-
-
-
-data = [[-1.73952898, -1.35679522, -3.89298252, -1.2184164], [2.27666342, -3.29886725, -3.89298252, -1.2184164], [2.27666342, -1.35679522, -3.89298252, 0.16037259], [-0.09252012, -1.35679522, -1.31174177, -1.2184164], [-4.36137774, -6.91457061, -3.89298252, -2.81218912], [-2.27576536, -6.91457061, -5.63065351, -5.14872164], [-2.27576536, -6.91457061, -3.89298252, -1.2184164], [-2.27576536, -1.35679522, -3.89298252, -1.2184164], [-2.27576536, -1.35679522, -2.85860019, -1.2184164], [2.27666342, -1.35679522, -1.31174177, -1.2184164], [-2.27576536, -6.91457061, -3.89298252, -2.81218912], [-4.36137774, -1.35679522, -5.63065351, 0.16037259], [-4.36137774, -6.39830061, -5.63065351, -5.14872164], [-0.09252012, -6.91457061, -3.5855664, -1.2184164], [2.27666342, -6.91457061, -3.89298252, -1.2184164], [-2.27576536, -6.91457061, -3.89298252, -1.2184164]]
+number_of_rounds = 5
+df = DataFrame(pd.read_csv("output.txt"))
+df.columns = ["score", "w0", "w1", "w2", "w3"]
+data_df = df.nlargest(16, "score")[["w0", "w1", "w2", "w3"]]
+data = data_df.values.tolist()
 
 #returns the weights of the genetic strain that won the most number of rounds
-def fight(wt_a, wt_b, rounds=5):
+def fight(wt_a, wt_b):
 
     wins_a = 0
     wins_b = 0
 
-    for _ in range(rounds):
-        app = tetris.TetrisApp(wt_a)
+    for _ in range(number_of_rounds):
+        app = tetris.TetrisApp(wt_a, True)
         app.run()
         score_a = app.score
 
-        app = tetris.TetrisApp(wt_b)
+        app = tetris.TetrisApp(wt_b, True)
         app.run()
         score_b = app.score
 
         if score_a > score_b:
             wins_a += 1
+            print("Player A wins with score of {}".format(score_a))
         else:
             wins_b += 1
-
-    return wt_a if wins_a > wins_b else wt_b
-
-# print(fight(data[0], data[15]))
+            print("Player B wins with score of {}".format(score_b))
 
 
+    if wins_a > wins_b:
+        winner = "A"
+    else:
+        winner = "B"
 
-print(list(zip(data[:8], data[8:][::-1])))
+    print("Player {} advances".format(winner))
+    print("************************")
+    return wt_a if winner == "A" else wt_b
 
-# for a, b in ):
-#     results.append(fight(a, b))
+#takes a list and recursively halve it using the function passed in
+#every two items are compared using the function and the winner is kept
+#will eventually return a list of 1 item
+def halve(li, func):
+    if len(li) == 1:
+        return li
 
+    return halve([a if func(a, b) else b for a, b in zip(li[::2], li[1::2])], func)
 
-# contenders = [(len(data) -index, d) for index, d in enumerate(data)] 
+matches = []
 
-# print(contenders)
+#1-16
+matches.append(data[0])
+matches.append(data[15])
+
+#8-9
+matches.append(data[7])
+matches.append(data[8])
+
+#4-13
+matches.append(data[3])
+matches.append(data[12])
+
+#5-12
+matches.append(data[4])
+matches.append(data[11])
+
+#2-15
+matches.append(data[1])
+matches.append(data[14])
+
+#7-10
+matches.append(data[6])
+matches.append(data[9])
+
+#3-14
+matches.append(data[2])
+matches.append(data[13])
+
+#6-11
+matches.append(data[5])
+matches.append(data[10])
+
+print(halve(matches, fight))
