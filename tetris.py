@@ -1,12 +1,12 @@
 from __future__ import division
-import pygame, sys, copy, time, random
+import pygame, sys, copy, time, random, itertools
 from blocks import Block
 import classifier
 
 #inspired by 2010 "Kevin Chabowski"<kevin@kch42.de>'s implementation of Tetris
 #rules taken from http://tetris.wikia.com/wiki/Tetris_Guideline
-cols = 8
-rows = 16
+cols = 6
+rows = 8
 cell_size = 36
 base_score = [0, 40, 100, 300, 1200]
 num_lines_to_advance = 6
@@ -46,6 +46,33 @@ def detect_collisions(board, block, coords=None):
 
     return False
 
+def potential_moves(board, block):
+    moves_dict = {}     
+    filled_surfaced = get_filled_surface(board)
+    potential_boards = []
+
+    flattened_potential_boards = []
+
+    for fs in filled_surfaced:
+        for b in valid_placement(board, block, fs):
+
+            temp_board = add_block_to_board(board, b)
+
+            #we use the flattened temp board (1D list) to test if the board is already stored
+            flattened_temp_board = list(itertools.chain(*temp_board))
+        
+            if flattened_temp_board not in flattened_potential_boards:
+                potential_boards.append((temp_board, b))
+                flattened_potential_boards.append(flattened_temp_board)
+
+    # print_boards([b for b, _ in potential_boards])
+    return potential_boards
+
+def print_boards(boards):
+    print("Total number of boards: {}".format(len(boards)))
+    for b in boards:
+        print_matrix(b, True)
+
 
 def valid_placement(board, block, surface_coords):
     width, height = len(block.value[0]), len(block.value)
@@ -66,11 +93,26 @@ def valid_placement(board, block, surface_coords):
 
     return results
 
+#returns True if any space above it is occupied
+def space_above_occupied(board, x, y):
+    for row in range(y):
+        if board[row][x]:
+            return True
+
+    return False
+
 #modifies block in place
 #returns coords of final position
 def valid_placement_helper(board, block):
+
     #if there is an initial collision before we start dropping, means invalid 
     if detect_collisions(board, block):
+        return None
+
+    #invalid if any space above it is blocked
+    #while this is a valid case, ignore it to make algorithm easier
+    coords = block.get_coords()
+    if any([space_above_occupied(board, x, y) for x, y in coords]):
         return None
 
     #meant to consider blocks that have empty parts
@@ -104,38 +146,13 @@ def add_block_to_board(board, block):
     return board
 
 #helper function for debugging
-def print_matrix(matrix):
+def print_matrix(matrix, exclude_bottom=False):
+    if exclude_bottom:
+        matrix = matrix[:-1]
     for row in matrix:
         print(row)  
 
     print("\n")
-
-def potential_moves(board, block):
-    moves_dict = {}     
-    filled_surfaced = get_filled_surface(board)
-    potential_boards = []
-
-    for fs in filled_surfaced:
-        for b in valid_placement(board, block, fs):
-
-            entry = b.get_coords()
-            key = entry[0][0]
-
-            #for entries with the same xcoord, we choose the one that is higher
-            #i.e. smaller y value
-            if key not in moves_dict or entry[0][1] < moves_dict[key][0][0][1]:
-                moves_dict[key] = (entry, b)
-
-
-    for val in moves_dict.values():
-        temp_block = val[1]
-        temp_board = add_block_to_board(board, temp_block)
-        potential_boards.append((temp_board, temp_block))
-
-    # print([b[0] for b in potential_boards])
-    
-    return potential_boards
-
 
 #returns list of coords with outermost filled blocks
 def get_filled_surface(board):
@@ -213,13 +230,15 @@ class TetrisApp(object):
 
             #a key trigger ai movement
             elif event.key == 97:
-                pygame.time.set_timer(AI_MOVE_EVENT, turn_in_milliseconds)
+                self.get_best_move()
+                # pygame.time.set_timer(AI_MOVE_EVENT, turn_in_milliseconds)
 
             #b key 
             elif event.key == 98:
                 # self.generate_new_block()
                 # self.update_screen()
                 # print(self.board)
+                potential_moves(self.board, self.block)
                 pass
                 # potential_moves(self.board, self.block)
 
@@ -360,6 +379,10 @@ class TetrisApp(object):
         self.last_block = None
         self.update_screen()
 
+
+        #remove for AI
+        self.block = Block.new_block(0, 0)
+
         #tells system to fire off a drop event once every 1000ms
         # pygame.time.set_timer(DROP_EVENT, 1000)
 
@@ -426,7 +449,7 @@ class TetrisApp(object):
             potential_blocks = [potential_block for _, potential_block in moves]
 
             # print(potential_boards)
-            index = classifier.return_best_board(potential_boards, self.weights)
+            index = classifier.return_best_board(potential_boards, self.weights, rows + 1, cols)
             best_block = potential_blocks[index]
 
             best_block.y = 0
@@ -448,7 +471,8 @@ class TetrisApp(object):
                         break
 
 if __name__ == "__main__":
-    app = TetrisApp([0, 0, 0, 0])
+    #clear, height, hole, blockage
+    app = TetrisApp([0.76, -5, -0.35, -0.18])
     app.run()
 
 

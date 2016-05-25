@@ -11,5 +11,9 @@ board = [[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 
 # print(valid_placement_helper(board, Block("t", 2, 0, 0)))
 # print(valid_placement_helper(board, Block("t", 3, 0, 0)))
 
-for b in valid_placement(board, Block("t", 0, 0, 0), [0, 16]):
-    print(b.get_coords())
+# for b in valid_placement(board, Block("t", 0, 0, 0), [0, 16]):
+#     print(b.get_coords())
+
+print_matrix(board)
+
+assert space_above_occupied(board, 2, 4) == False
