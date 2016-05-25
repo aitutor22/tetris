@@ -5,8 +5,8 @@ import classifier
 
 #inspired by 2010 "Kevin Chabowski"<kevin@kch42.de>'s implementation of Tetris
 #rules taken from http://tetris.wikia.com/wiki/Tetris_Guideline
-cols = 6
-rows = 8
+cols = 8
+rows = 16
 cell_size = 36
 base_score = [0, 40, 100, 300, 1200]
 num_lines_to_advance = 6
