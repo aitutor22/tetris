@@ -16,13 +16,21 @@ def fight(wt_a, wt_b):
     wins_b = 0
 
     for _ in range(number_of_rounds):
-        app = tetris.TetrisApp(wt_a, True)
-        app.run()
-        score_a = app.score
+        try:
+            app = tetris.TetrisApp(wt_a, True)
+            app.run()
+            score_a = app.score
+        except ValueError: 
+            print(app.board)
+            print(app.block)
 
-        app = tetris.TetrisApp(wt_b, True)
-        app.run()
-        score_b = app.score
+        try:
+            app = tetris.TetrisApp(wt_b, True)
+            app.run()
+            score_b = app.score
+        except ValueError: 
+            print(app.board)
+            print(app.block)        
 
         if score_a > score_b:
             wins_a += 1

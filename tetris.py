@@ -55,7 +55,6 @@ def potential_moves(board, block):
 
     for fs in filled_surfaced:
         for b in valid_placement(board, block, fs):
-
             temp_board = add_block_to_board(board, b)
 
             #we use the flattened temp board (1D list) to test if the board is already stored
@@ -65,7 +64,6 @@ def potential_moves(board, block):
                 potential_boards.append((temp_board, b))
                 flattened_potential_boards.append(flattened_temp_board)
 
-    # print_boards([b for b, _ in potential_boards])
     return potential_boards
 
 def print_boards(boards):
@@ -86,6 +84,14 @@ def valid_placement(board, block, surface_coords):
             test_block.x = surface_coords[0] - offset_x
             test_block.y = surface_coords[1] - height
 
+            #True if any of the blocks are above starting_row
+            above_starting_row = any([y < 0 for x, y in test_block.get_coords()])
+
+            #sometimes blocks will be above
+            while above_starting_row:
+                test_block.y += 1
+                above_starting_row = any([y < 0 for x, y in test_block.get_coords()])
+
             coords = valid_placement_helper(board, test_block)
 
             if coords:
@@ -104,7 +110,7 @@ def space_above_occupied(board, x, y):
 #modifies block in place
 #returns coords of final position
 def valid_placement_helper(board, block):
-
+    # print(block.value, block.x, block.y)
     #if there is an initial collision before we start dropping, means invalid 
     if detect_collisions(board, block):
         return None
@@ -168,12 +174,15 @@ def get_filled_surface(board):
     return filled_surfaced   
 
 class TetrisApp(object):
-    def __init__(self, weights, headless=False):
+    def __init__(self, weights, headless=False, default_board=None):
 
         self.weights = weights
         self.width = cell_size * cols
         self.height = cell_size * rows
         self.headless = headless
+
+        #for testing purposes
+        self.default_board = default_board
 
         if not headless:
             pygame.init()
@@ -385,7 +394,13 @@ class TetrisApp(object):
         self.score = 0
         self.level = 1
         self.lines_cleared = 0
-        self.board = self.new_board()
+        
+        if self.default_board != None:
+            self.board = self.default_board
+        else:
+            self.board = self.new_board()
+
+
         self.block = None
         self.last_block = None
 
@@ -462,7 +477,6 @@ class TetrisApp(object):
             potential_boards = [potential_board for potential_board, _ in moves]
             potential_blocks = [potential_block for _, potential_block in moves]
 
-            # print(potential_boards)
             index = classifier.return_best_board(potential_boards, self.weights, rows + 1, cols)
             best_block = potential_blocks[index]
 

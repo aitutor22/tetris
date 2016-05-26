@@ -2,16 +2,16 @@ import tetris
 import numpy as np
 import itertools
 
-population_size = 20
+population_size = 200
 no_of_features = 4
 selection_portion = 0.5 #percentage of population to keep every round
     
 def ga_main():
 
-    no_of_iterations = 15
+    no_of_iterations = 25
 
     #generate initial solution
-    solns_weight_arr = np.random.randn(population_size, no_of_features) * 3
+    solns_weight_arr = np.random.randn(population_size, no_of_features) * 10
     
     for i in range(no_of_iterations):
         print "iteration %s ans:" %(i)        
@@ -51,17 +51,22 @@ def ga_train_once(solns_weight_arr):
             #print gene
             #mutate one of its features
             feature_to_mutate = np.random.randint(0,4)
-            gene[feature_to_mutate] = np.random.randn(1) * 5
+            gene[feature_to_mutate] = np.random.randn(1) * 10
             #print "mutated: %s" %(gene)
     return new_pool
     
 def simulate_for_results(wt_arr):
-    #run the game and get back the result
-    app = tetris.TetrisApp(wt_arr, True)
-    app.run()
-    print(app.score)
-
-
+    try:
+        #run the game and get back the result
+        app = tetris.TetrisApp(wt_arr, True)
+        app.run()
+        print(app.score)
+    except ValueError: 
+        print("Error")
+        print(app.board)
+        print(app.block.value)
+        print(app.block.x)
+        print(app.block.y)
 
     #appends to file
     with open("output.txt", "a") as f:
@@ -69,8 +74,5 @@ def simulate_for_results(wt_arr):
 
     return app.score
     #return result_arr
-
-
-
 
 ga_main()

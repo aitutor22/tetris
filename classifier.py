@@ -11,7 +11,7 @@ def return_best_board(input_list, weight_arr, rows=17, cols=8):
     results_arr = []
     for i in input_list:
         results_arr.append(calc_results(i, weight_arr, rows, cols))
-    # print results_arr
+
     return np.argmax(results_arr)
     
 def calc_results(input_list, weight_arr, rows, cols):
